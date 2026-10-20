@@ -11,8 +11,9 @@ Architecture* (SIGCOMM 2008), [DOI: 10.1145/1402946.1402967](https://doi.org/10.
 
 ## Model
 
-`k` is the number of ports on every switch, and it must be an even integer at
-least 2. Let `m = k / 2`.
+`k` is the number of ports on every switch, not the number of pods. It must be
+an even integer at least 2. In the canonical k-ary Fat-Tree, this port count
+also determines that the topology contains exactly `k` pods. Let `m = k / 2`.
 
 - There are `k` pods. Each pod contains `m` edge switches and `m` aggregation
   switches.
@@ -53,7 +54,7 @@ python3 main.py --k 4
 The command-line inputs are:
 
 - `--k K` (required): even switch-port count, with `K >= 2`. It controls the
-  size of the topology.
+  topology scale, including the number of pods (which is also `K`).
 - `--failure-rate PERCENT` (optional, default `0`): percentage from `0` through
   `100` of eligible links to remove.
 - `--failure-scope {all,fabric}` (optional, default `all`): `all` samples every
@@ -157,6 +158,7 @@ separate from the CLI, so those later features can reuse them.
 
 ## AI assistance acknowledgment
 
-This Phase 1 implementation and documentation were developed with assistance
-from OpenAI Codex. The student should review and understand the generator,
-indexing convention, tests, and README before submitting or discussing it.
+This implementation and documentation were developed with assistance from
+OpenAI Codex. The student has reviewed all AI-generated code and documentation,
+understands the generator, indexing convention, tests, and README, and accepts
+full responsibility for the submitted work.
