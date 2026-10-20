@@ -159,6 +159,6 @@ separate from the CLI, so those later features can reuse them.
 ## AI assistance acknowledgment
 
 This implementation and documentation were developed with assistance from
-OpenAI Codex. The student has reviewed all AI-generated code and documentation,
+OpenAI Codex. The student (me) has reviewed all AI-generated code and documentation,
 understands the generator, indexing convention, tests, and README, and accepts
 full responsibility for the submitted work.
