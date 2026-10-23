@@ -1,4 +1,4 @@
-"""Command-line entry point for the Phase 1 fat-tree generator."""
+"""Command-line entry point for the fat-tree generator."""
 
 from __future__ import annotations
 

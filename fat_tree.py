@@ -214,24 +214,32 @@ def validate_fat_tree(graph: nx.Graph, k: int) -> None:
     for node, data in graph.nodes(data=True):
         role = data["role"]
         neighbours = list(graph.neighbors(node))
-        neighbour_roles = Counter(graph.nodes[neighbour]["role"] for neighbour in neighbours)
         expected_degree = 1 if role == "host" else k
         if len(neighbours) != expected_degree:
             raise ValueError(f"{node} has degree {len(neighbours)}, expected {expected_degree}")
 
         if role == "host":
-            if neighbour_roles != Counter(edge=1):
-                raise ValueError(f"{node} must connect only to one edge switch")
+            expected_edge = f"edge:p{data.get('pod')}:e{data.get('edge_index')}"
+            if set(neighbours) != {expected_edge}:
+                raise ValueError(f"{node} must connect to {expected_edge}")
         elif role == "edge":
-            if neighbour_roles != Counter(host=m, aggregation=m):
+            pod = data.get("pod")
+            index = data.get("index")
+            expected_hosts = {
+                f"host:p{pod}:e{index}:h{host_index}" for host_index in range(m)
+            }
+            expected_aggregations = {
+                f"agg:p{pod}:a{aggregation_index}" for aggregation_index in range(m)
+            }
+            if set(neighbours) != expected_hosts | expected_aggregations:
                 raise ValueError(f"{node} has invalid edge-layer neighbours")
         elif role == "aggregation":
-            if neighbour_roles != Counter(edge=m, core=m):
-                raise ValueError(f"{node} has invalid aggregation-layer neighbours")
-            index = data["index"]
+            pod = data.get("pod")
+            index = data.get("index")
+            expected_edges = {f"edge:p{pod}:e{edge_index}" for edge_index in range(m)}
             expected_cores = {f"core:g{index}:c{position}" for position in range(m)}
-            if set(neighbours) & expected_cores != expected_cores:
-                raise ValueError(f"{node} has incorrect core uplinks")
+            if set(neighbours) != expected_edges | expected_cores:
+                raise ValueError(f"{node} has invalid aggregation-layer neighbours")
         elif role == "core":
             group = data["group"]
             expected_aggs = {f"agg:p{pod}:a{group}" for pod in range(k)}
@@ -239,8 +247,13 @@ def validate_fat_tree(graph: nx.Graph, k: int) -> None:
                 raise ValueError(f"{node} has incorrect pod connections")
 
 
-def draw_fat_tree(graph: nx.Graph, max_k: int = MAX_DRAW_K) -> None:
-    """Display a layered drawing of a small fat-tree graph.
+def draw_fat_tree(
+    graph: nx.Graph,
+    max_k: int = MAX_DRAW_K,
+    *,
+    output_path: str | None = None,
+) -> None:
+    """Display or save a layered drawing of a small fat-tree graph.
 
     Drawing is intentionally limited to small examples because the number of
     links grows as ``3k^3/4``. Matplotlib is imported here, rather than at
@@ -254,6 +267,10 @@ def draw_fat_tree(graph: nx.Graph, max_k: int = MAX_DRAW_K) -> None:
             f"drawing is limited to k <= {max_k}; k={k} would be too crowded"
         )
 
+    if output_path is not None:
+        import matplotlib
+
+        matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
     m = k // 2
@@ -298,12 +315,30 @@ def draw_fat_tree(graph: nx.Graph, max_k: int = MAX_DRAW_K) -> None:
         )
     # Host IDs are intentionally omitted: at k=4 they would overlap and hide
     # the host-to-edge structure. Switch IDs remain visible for discussion.
-    switch_labels = {
-        node: node for node, data in graph.nodes(data=True) if data["role"] != "host"
-    }
-    nx.draw_networkx_labels(graph, positions, labels=switch_labels, font_size=5, ax=axis)
+    switch_labels = {}
+    for node, data in graph.nodes(data=True):
+        if data["role"] == "edge":
+            switch_labels[node] = f"e{data['index']}"
+        elif data["role"] == "aggregation":
+            switch_labels[node] = f"a{data['index']}"
+        elif data["role"] == "core":
+            switch_labels[node] = f"g{data['group']}:c{data['position']}"
+    nx.draw_networkx_labels(graph, positions, labels=switch_labels, font_size=7, ax=axis)
+    for pod in range(k):
+        axis.text(
+            pod * pod_width + m / 2,
+            -0.4,
+            f"Pod {pod}",
+            horizontalalignment="center",
+            fontweight="bold",
+        )
     axis.set_title(f"Canonical {k}-ary Fat-Tree")
+    axis.set_ylim(-0.6, 3.35)
     axis.set_axis_off()
     axis.legend(title="Node role", loc="upper left", bbox_to_anchor=(1.01, 1))
     figure.tight_layout()
-    plt.show()
+    if output_path is None:
+        plt.show()
+    else:
+        figure.savefig(output_path, dpi=200, bbox_inches="tight")
+    plt.close(figure)

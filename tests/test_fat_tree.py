@@ -67,6 +67,19 @@ class FatTreeTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate_fat_tree(graph, 4)
 
+    def test_validator_detects_cross_pod_host_swap(self) -> None:
+        graph = build_fat_tree(4)
+        first_host = "host:p0:e0:h0"
+        second_host = "host:p1:e0:h0"
+        first_edge = "edge:p0:e0"
+        second_edge = "edge:p1:e0"
+        graph.remove_edges_from(((first_host, first_edge), (second_host, second_edge)))
+        graph.add_edge(first_host, second_edge, layer="host-edge")
+        graph.add_edge(second_host, first_edge, layer="host-edge")
+
+        with self.assertRaises(ValueError):
+            validate_fat_tree(graph, 4)
+
     def test_drawing_rejects_large_topologies(self) -> None:
         with self.assertRaisesRegex(ValueError, "limited to k <= 4"):
             draw_fat_tree(build_fat_tree(6))
