@@ -80,6 +80,13 @@ class FatTreeTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate_fat_tree(graph, 4)
 
+    def test_validator_detects_incorrect_link_layer(self) -> None:
+        graph = build_fat_tree(4)
+        graph.edges["host:p0:e0:h0", "edge:p0:e0"]["layer"] = "aggregation-core"
+
+        with self.assertRaisesRegex(ValueError, "expected 'host-edge'"):
+            validate_fat_tree(graph, 4)
+
     def test_drawing_rejects_large_topologies(self) -> None:
         with self.assertRaisesRegex(ValueError, "limited to k <= 4"):
             draw_fat_tree(build_fat_tree(6))
@@ -103,6 +110,12 @@ class FatTreeTests(unittest.TestCase):
         self.assertEqual(result.graph.number_of_edges(), 46)
         for left, right in result.removed_links:
             self.assertIn(graph.edges[left, right]["layer"], {"edge-aggregation", "aggregation-core"})
+
+    def test_failure_count_uses_half_up_rounding(self) -> None:
+        graph = build_fat_tree(4)
+        # 7.8125% of 32 eligible links is exactly 2.5, which rounds up to 3.
+        result = inject_link_failures(graph, 7.8125, scope="fabric", seed=0)
+        self.assertEqual(len(result.removed_links), 3)
 
     def test_seed_reproduces_the_same_link_set(self) -> None:
         graph = build_fat_tree(4)

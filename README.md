@@ -84,7 +84,7 @@ The only direct dependencies are NetworkX and Matplotlib.
 - **Matplotlib** draws the topology and produces the reachability and efficiency plots. Experiment plots use its non-interactive `Agg` backend so they can be generated reproducibly without opening a window.
 - **Python standard library** modules provide the remaining functionality: `argparse` for both command-line interfaces, `random.Random` for seeded failure sampling, `csv` and `pathlib` for result files, `statistics` for means and sample standard deviations, and `unittest` for verification.
 
-The main data structure is a simple undirected graph because a physical link carries traffic in both directions and the model has at most one link between any two nodes. Sets are used when validating exact neighbor relationships, tuples preserve stable collections of links and pairs, and dictionaries hold node metadata and result rows. Immutable data classes package topology, failure, and metric results so values cannot be accidentally changed after calculation.
+The main data structure is a simple undirected graph because a physical link carries traffic in both directions and the model has at most one link between any two nodes. Sets are used when validating exact neighbor relationships, tuples preserve stable collections of links and pairs, and dictionaries hold node metadata and result rows. Frozen data classes prevent reassignment of result fields after calculation; their contained graph and dictionary objects remain mutable.
 
 The implementation flow is: build and validate the intact graph, copy it, remove a seeded sample of eligible links, calculate all host-pair metrics, write one CSV row per trial, and aggregate the rows into the two plots.
 
@@ -200,7 +200,7 @@ python3 experiment.py \
   --output-dir results
 ```
 
-The command writes trial-level data to `results/robustness_metrics.csv` and generates both plots below. The line is the mean over 30 trials; the shaded band is one sample standard deviation.
+The command writes trial-level data to `results/robustness_metrics.csv` and generates both plots below. Plot x-coordinates are the requested failure percentages; the CSV also records the realized percentage after the requested rate is rounded to a whole number of links. The line is the mean over 30 trials; the shaded band is one sample standard deviation, clipped to the valid 0–100% range.
 
 ## Results
 
@@ -231,13 +231,13 @@ The principal result is that robustness improves substantially with `k`. Increas
 
 The uncertainty bands are also meaningful. Small `k = 4` networks have fewer alternative links, so the exact failed-link sample strongly affects whether critical paths survive. Larger networks exhibit both higher mean robustness and lower relative sensitivity to an individual sample.
 
-At severe failure rates, average path length among only reachable pairs must be interpreted carefully. For `k = 4`, it eventually decreases because many long-distance pairs have disconnected, leaving a larger proportion of short local pairs. Normalized efficiency still decreases because disconnected pairs contribute zero.
+At severe failure rates, average path length among only reachable pairs must be interpreted carefully. For `k = 4`, its trial mean falls from 5.95 links at a requested 30% failure rate to 5.29 links at 50%, even as reachability falls from 81.56% to 35.56% and normalized efficiency falls from 78.87% to 41.31%. The path-length decrease is not an improvement: many long-distance pairs have disconnected, leaving a larger proportion of short local pairs. Normalized efficiency still decreases because disconnected pairs contribute zero.
 
 ## Limitations
 
 This experiment measures structural graph robustness. It does not simulate packet traffic, link capacity, congestion, TCP behavior, or the paper's two-level routing, flow classifier, and centralized flow scheduler. A connected path proves that communication is possible, not that it can achieve full bandwidth.
 
-The failure model removes a fixed percentage of eligible links uniformly without replacement. It does not model correlated rack, switch, pod, or power failures. The conclusions therefore apply to independent random fabric-link failures under the stated model.
+The failure model uniformly selects a fixed number of eligible links without replacement. The individual link-failure indicators are therefore dependent, unlike independent per-link Bernoulli failures. The model does not represent correlated rack, switch, pod, or power failures. The conclusions apply specifically to uniform fixed-count random fabric-link deletion under the stated model.
 
 ## Verification
 

@@ -10,6 +10,7 @@ from experiment import (
     CSV_FILENAME,
     EFFICIENCY_PLOT_FILENAME,
     REACHABILITY_PLOT_FILENAME,
+    _failure_scope_plot_text,
     run_experiment,
     validate_experiment_inputs,
 )
@@ -51,6 +52,16 @@ class HostPairMetricTests(unittest.TestCase):
 
 
 class ExperimentTests(unittest.TestCase):
+    def test_plot_text_matches_failure_scope(self) -> None:
+        self.assertEqual(
+            _failure_scope_plot_text("fabric"),
+            ("Random Fabric-Link Failures", "Requested failed fabric links (%)"),
+        )
+        self.assertEqual(
+            _failure_scope_plot_text("all"),
+            ("Random Failures Across All Links", "Requested failed links (%)"),
+        )
+
     def test_small_run_is_reproducible_and_writes_artifacts(self) -> None:
         with tempfile.TemporaryDirectory() as first_directory, tempfile.TemporaryDirectory() as second_directory:
             first_path = Path(first_directory)

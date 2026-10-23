@@ -211,6 +211,23 @@ def validate_fat_tree(graph: nx.Graph, k: int) -> None:
     if not nx.is_connected(graph):
         raise ValueError("fat-tree graph must be connected")
 
+    expected_layers = {
+        frozenset(("host", "edge")): "host-edge",
+        frozenset(("edge", "aggregation")): "edge-aggregation",
+        frozenset(("aggregation", "core")): "aggregation-core",
+    }
+    for left, right, edge_data in graph.edges(data=True):
+        endpoint_roles = frozenset(
+            (graph.nodes[left]["role"], graph.nodes[right]["role"])
+        )
+        expected_layer = expected_layers.get(endpoint_roles)
+        actual_layer = edge_data.get("layer")
+        if expected_layer is None or actual_layer != expected_layer:
+            raise ValueError(
+                f"edge {left}--{right} has layer {actual_layer!r}, "
+                f"expected {expected_layer!r}"
+            )
+
     for node, data in graph.nodes(data=True):
         role = data["role"]
         neighbours = list(graph.neighbors(node))

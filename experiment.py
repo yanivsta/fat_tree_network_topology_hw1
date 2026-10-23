@@ -164,12 +164,21 @@ def _series_summary(
     return means, deviations
 
 
+def _failure_scope_plot_text(scope: str) -> tuple[str, str]:
+    """Return the title phrase and x-axis label for a failure scope."""
+    scope = validate_failure_scope(scope)
+    if scope == "fabric":
+        return "Random Fabric-Link Failures", "Requested failed fabric links (%)"
+    return "Random Failures Across All Links", "Requested failed links (%)"
+
+
 def _plot_metric(
     rows: Sequence[ExperimentRow],
     output_path: Path,
     metric_name: str,
     title: str,
     y_label: str,
+    x_label: str,
 ) -> None:
     import matplotlib
 
@@ -188,7 +197,7 @@ def _plot_metric(
         axis.fill_between(failure_rates, lower, upper, color=line.get_color(), alpha=0.16)
 
     axis.set_title(title)
-    axis.set_xlabel("Failed fabric links (%)")
+    axis.set_xlabel(x_label)
     axis.set_ylabel(y_label)
     minimum_rate = min(failure_rates)
     maximum_rate = max(failure_rates)
@@ -206,19 +215,25 @@ def _plot_metric(
 
 def plot_experiment_results(rows: Sequence[ExperimentRow], output_dir: Path) -> None:
     """Create reachability and normalized-efficiency plots."""
+    scopes = {row.failure_scope for row in rows}
+    if len(scopes) != 1:
+        raise ValueError("all plotted experiment rows must use the same failure scope")
+    title_phrase, x_label = _failure_scope_plot_text(scopes.pop())
     _plot_metric(
         rows,
         output_dir / REACHABILITY_PLOT_FILENAME,
         metric_name="reachability_percentage",
-        title="Fat-Tree Reachability Under Random Fabric-Link Failures",
+        title=f"Fat-Tree Reachability Under {title_phrase}",
         y_label="Reachable host pairs (%)",
+        x_label=x_label,
     )
     _plot_metric(
         rows,
         output_dir / EFFICIENCY_PLOT_FILENAME,
         metric_name="normalized_efficiency_percentage",
-        title="Fat-Tree Communication Efficiency Under Random Fabric-Link Failures",
+        title=f"Fat-Tree Communication Efficiency Under {title_phrase}",
         y_label="Normalized host-pair efficiency (%)",
+        x_label=x_label,
     )
 
 
