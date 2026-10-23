@@ -10,8 +10,6 @@ The experiment shows that larger fat-trees preserve substantially more communica
 
 The implementation follows the topology in M. Al-Fares, A. Loukissas, and A. Vahdat, [*A Scalable, Commodity Data Center Network Architecture*](https://doi.org/10.1145/1402958.1402967), ACM SIGCOMM 2008. The paper uses a fat-tree to connect many hosts with identical commodity Ethernet switches while providing many equal-cost paths between pods.
 
-A detailed summary of the homework and paper is available in [ASSIGNMENT_AND_PAPER_SUMMARY.md](ASSIGNMENT_AND_PAPER_SUMMARY.md).
-
 ## Topology Model
 
 `k` is the number of ports on every switch. It must be an even integer greater than or equal to 2. Let `m = k / 2`.
@@ -270,7 +268,6 @@ tests/test_fat_tree.py             topology and failure tests
 tests/test_analysis.py             metric and experiment tests
 results/robustness_metrics.csv     trial-level experimental data
 results/*.png                      generated result plots
-ASSIGNMENT_AND_PAPER_SUMMARY.md    homework and cited-paper study notes
 requirements.txt                   Python dependencies
 ```
 
